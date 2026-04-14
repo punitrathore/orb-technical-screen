@@ -54,7 +54,16 @@ You can think of a tenant as a company that buys Orb's product (e.g. Acme Corpor
 | ----------- | --------- | ------------------------------------------- |
 | id          | UUID      | UUIDv4 generated from the database directly |
 | tenant_id   | UUID      | Foreign key to our `tenants` table          |
+| user_id | UUID | Foreign key to our `users` table |
 | created_at  | timestamp | Default to `NOW()` if unset                 |
+| amount | BIGDECIMAL |
+| effective_at | timestamp |
+| expires_at | timestamp | 
+
+
+#### queries
+
+select * from credits where user_id = ? and tenant_id = ? and effective_at <= ?
 
 #### Indexes
 
@@ -62,6 +71,7 @@ You can think of a tenant as a company that buys Orb's product (e.g. Acme Corpor
 | -------------- | ----------- |
 | id             | Primary Key |
 | tenant_id      | Regular     |
+| tenant_id, user_id, effective_at  | BTree  |
 
 ### Deductions Table
 
@@ -71,7 +81,15 @@ You can think of a tenant as a company that buys Orb's product (e.g. Acme Corpor
 | ----------- | --------- | ------------------------------------------- |
 | id          | UUID      | UUIDv4 generated from the database directly |
 | tenant_id   | UUID      | Foreign key to our `tenants` table          |
+| user_id | UUID | foreign key from `users` 
 | created_at  | timestamp | Default to `NOW()` if unset                 |
+| amount | BIGDECIMAL |
+| effective_at | timestamp |
+
+### queries
+select * from deductions where user_id = ? and tenant_id = ? and effective_at <= timestamp
+
+
 
 #### Indexes
 
@@ -79,3 +97,4 @@ You can think of a tenant as a company that buys Orb's product (e.g. Acme Corpor
 | -------------- | ----------- |
 | id             | Primary Key |
 | tenant_id      | Regular     |
+| tenant_id, user_id, effective_at | BTree

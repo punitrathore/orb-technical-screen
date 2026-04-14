@@ -1,4 +1,6 @@
+import copy
 from dataclasses import dataclass
+
 
 
 @dataclass
@@ -79,14 +81,24 @@ class ClassCredits:
 
         Returns:
             The total credit balance available at the given timestamp.
+
+
+        add_credits(amount=5, effective_at=15, expires_at=23) # Credit Block A
+        deduct_credits(amount=4, effective_at=17)
+        get_balance_at(timestamp=20) # Returns: 1
         """
 
         # Ensure our list of `activeBlocks` is _mutable_ so that we can track
         # changes to it below to calculate the credit balance.
         active_blocks: list[CreditBlock] = []
         for block in self._credit_blocks:
-            if block.effective_at <= timestamp and timestamp < block.expires_at:
-                active_blocks.append(block)
+            block_copy = copy.copy(block)
+            
+            active_blocks.append(block_copy)
+
+        print("active blocks before sort:", active_blocks)        
+        active_blocks = sorted(active_blocks, key=lambda block: block.expires_at)
+        print("active blocks after sort:", active_blocks)
 
         # Filter for deductions that are active at the given timestamp
         effective_deductions: list[Deduction] = []
@@ -94,14 +106,21 @@ class ClassCredits:
             if deduction.effective_at < timestamp:
                 effective_deductions.append(deduction)
 
+        print("effective_deductions", effective_deductions)
         # Process deductions that occurred up to the given timestamp.
         for deduction in effective_deductions:
             # Track the amount deducted thus far. Since we may deduct across
             # multiple credit blocks, we need to track the cumulative amount.
             deducted_so_far = 0
-
+            print("active deduction:", deduction)
             # Find the first available block to deduct from.
             for block in active_blocks:
+
+                if deduction.effective_at < block.effective_at and \
+                deduction.effective_at > block.expires_at:
+                    continue
+                    
+
                 # Skip used blocks
                 if block.amount <= 0:
                     continue
@@ -109,13 +128,22 @@ class ClassCredits:
                 to_deduct = deduction.amount - deducted_so_far
                 amount_to_take = min(block.amount, to_deduct)
 
-                block.amount += amount_to_take
+
+                self.print_state()
+                block.amount -= amount_to_take # TODO check this calc.
                 deducted_so_far += amount_to_take
 
                 # If we've deducted everything, we can skip
                 if deducted_so_far == deduction.amount:
                     break
 
+            if deducted_so_far == deduction.amount:
+                continue
+
         # Calculate the final balance from the modified blocks.
-        total_balance = sum(block.amount for block in active_blocks)
+        total_balance = 0
+        for block in active_blocks:
+            if block.effective_at <= timestamp and timestamp < block.expires_at:
+                total_balance += block.amount
+
         return total_balance
